@@ -1,3 +1,25 @@
 {
-  "extends": "./node_modules/gts/"
+  "extends": "./node_modules/gts/",
+  "plugins": [
+    "node",
+    "prettier",
+    "jest"
+  ],
+  "env": {
+    "jest/globals": true
+  },
+  "ignorePatterns": [
+    "webpack.config.js",
+    "build/"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "*.test.ts"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    }
+  ]
 }
