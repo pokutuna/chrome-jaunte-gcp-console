@@ -2,6 +2,7 @@
   "extends": "./node_modules/gts/tsconfig-google.json",
   "compilerOptions": {
     "module": "ES2015",
+    "declaration": false,
     "rootDir": ".",
     "outDir": "build"
   },
