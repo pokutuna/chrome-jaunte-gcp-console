@@ -1,0 +1,22 @@
+{
+  "name": "chrome-jaunte-gcp-console",
+  "version": "1.0.0",
+  "repository": "ssh://git@github.com/pokutuna/chrome-jaunte-gcp-console.git",
+  "author": "pokutuna <popopopopokutuna@gmail.com>",
+  "private": true,
+  "license": "MIT",
+  "devDependencies": {
+    "gts": "^2.0.0-alpha.4",
+    "typescript": "~3.7.0",
+    "@types/node": "^10.0.3"
+  },
+  "scripts": {
+    "check": "gts check",
+    "clean": "gts clean",
+    "compile": "tsc -p .",
+    "fix": "gts fix",
+    "prepare": "yarn run compile",
+    "pretest": "yarn run compile",
+    "posttest": "yarn run check"
+  }
+}
