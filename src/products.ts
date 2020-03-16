@@ -2,7 +2,7 @@
  * A Service GCP Provides
  * e.g. Logging
  */
-interface Product {
+export interface Product {
   /**
    * Name of the product.
    * Follow the notation on console.
@@ -25,7 +25,7 @@ interface Product {
  * A Menu Item in a Product
  * e.g. Viewer
  */
-interface Feature {
+export interface Feature {
   /**
    * Name of the feature.
    * Follow the notation on console.

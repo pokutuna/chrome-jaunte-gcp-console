@@ -1,6 +1,6 @@
 {
   "manifest_version": 2,
-  "name": "Jaunte GCP",
+  "name": "Jaunte GCP Console",
   "description": "<from package.json>",
   "version": "<from package.json>",
   "version_name": "<from git tag & revision>",
@@ -16,7 +16,5 @@
     "persistent": false
   },
 
-  "permissions": ["activeTab", "storage"],
-
-  "optional_permissions": ["https://console.cloud.google.com/*"]
+  "permissions": ["activeTab", "storage", "https://console.cloud.google.com/*"]
 }
