@@ -1,5 +1,6 @@
 {
   "name": "chrome-jaunte-gcp-console",
+  "description": "A Unofficial GCP Extension to \"jaunte\" around the console pages.",
   "version": "1.0.0",
   "repository": "ssh://git@github.com/pokutuna/chrome-jaunte-gcp-console.git",
   "author": "pokutuna <popopopopokutuna@gmail.com>",

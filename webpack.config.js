@@ -34,18 +34,23 @@ module.exports = {
     new CleanWebpackPlugin(),
     new CopyPlugin([
       {
-        from: "src/img/",
-        to: "img/"
+        from: 'src/img/',
+        to: 'img/',
       },
       {
         from: 'src/manifest.json',
         transform: content => {
           return versionName().then(versionName =>
-            JSON.stringify({
-              ...JSON.parse(content.toString()),
-              version: process.env.npm_package_version,
-              version_name: versionName,
-            })
+            JSON.stringify(
+              {
+                ...JSON.parse(content.toString()),
+                description: process.env.npm_package_description,
+                version: process.env.npm_package_version,
+                version_name: versionName,
+              },
+              null,
+              2
+            )
           );
         },
       },
