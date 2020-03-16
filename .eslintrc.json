@@ -6,7 +6,11 @@
     "jest"
   ],
   "env": {
+    "browser": true,
     "jest/globals": true
+  },
+  "globals": {
+    "chrome": "readonly"
   },
   "ignorePatterns": [
     "webpack.config.js",
