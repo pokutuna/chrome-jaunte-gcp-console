@@ -14,12 +14,11 @@
     "typescript": "~3.7.0"
   },
   "scripts": {
+    "test": "jest",
     "check": "gts check",
     "clean": "gts clean",
     "compile": "tsc -p .",
     "fix": "gts fix",
-    "prepare": "yarn run compile",
-    "pretest": "yarn run compile",
     "posttest": "yarn run check"
   }
 }
