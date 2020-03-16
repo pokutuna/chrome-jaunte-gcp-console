@@ -10,7 +10,7 @@
     "128": "img/icon/128.png"
   },
 
-  "omnibox": {"keyword": "gcp"},
+  "omnibox": {"keyword": "g"},
   "background": {
     "scripts": ["background.js"],
     "persistent": false
