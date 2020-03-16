@@ -1,0 +1,23 @@
+{
+  "manifest_version": 2,
+  "name": "chrome-jaunte-gcp-console",
+  "version": "<from package.json>",
+  "version_name": "<from git tag & revision>",
+
+  "description": "",
+  "icons": {
+    "16": "img/icon/16.png",
+    "48": "img/icon/48.png",
+    "128": "img/icon/128.png"
+  },
+
+  "omnibox": {"keyword": "gcp"},
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+
+  "permissions": ["activeTab", "storage"],
+
+  "optional_permissions": ["https://console.cloud.google.com/*"]
+}
