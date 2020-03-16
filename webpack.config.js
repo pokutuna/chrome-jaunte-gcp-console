@@ -34,6 +34,10 @@ module.exports = {
     new CleanWebpackPlugin(),
     new CopyPlugin([
       {
+        from: "src/img/",
+        to: "img/"
+      },
+      {
         from: 'src/manifest.json',
         transform: content => {
           return versionName().then(versionName =>
