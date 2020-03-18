@@ -1,80 +1,64 @@
 import {products, Product, Feature} from './products';
+import {intersection} from './util';
 import {JaunteState} from './storage';
 
-export interface ProjectSearchResult {
-  projectIds: string[];
-  found: boolean;
+interface FeatureCandidate extends Feature {
+  productName: string;
 }
 
-interface Token {
-  chunk: string;
-  matched: boolean;
+const featureCandidates = products.reduce((is, product) => {
+  const fs = product.features.map(f => ({
+    productName: product.name.toLowerCase(),
+    name: f.name.toLowerCase(),
+    path: f.path,
+  }));
+  return is.concat(fs);
+}, [] as FeatureCandidate[]);
+
+function match(input: string, feature: FeatureCandidate): boolean {
+  return (
+    feature.productName.includes(input) ||
+    feature.name.includes(input) ||
+    feature.path.includes(input)
+  );
 }
 
-interface SearchResult {
-  projects: string[];
-  products: Product[];
-  features: Feature[];
+function featureCandidatesByToken(tokens: string[]) {
+  return tokens.reduce((m, t) => {
+    m[t] = new Set<FeatureCandidate>(
+      featureCandidates.filter(f => match(t, f))
+    );
+    return m;
+  }, {} as {[token: string]: Set<FeatureCandidate>});
 }
 
-export function searchCandidates(
-  input: string,
-  state: JaunteState
-): SearchResult | undefined {
-  const result: SearchResult = {
-    projects: [],
-    products: [],
-    features: [],
-  };
+export interface Item {
+  feature: FeatureCandidate;
+  project: string;
+}
 
-  const tokens: Token[] = input
-    .split(' ')
-    .filter(s => s !== '' && !/\s/.test(s))
-    .map(chunk => ({
-      chunk,
-      matched: false,
-    }));
+export function search(
+  tokens: string[], // must be lower cased
+  state: JaunteState,
+  selectedProject: string | undefined
+): Item[] {
+  tokens = tokens.map(t => t.toLocaleLowerCase());
 
-  // projects
-  (state.visitedProjectIdList || []).forEach(p => {
-    let matched = false;
+  const projects = selectedProject
+    ? [selectedProject]
+    : (state.visitedProjectIdList || []).slice(0, 10);
+
+  const tokenToFeatures = featureCandidatesByToken(tokens);
+
+  const items: Item[] = [];
+  projects.forEach(p => {
+    let features = new Set(featureCandidates);
     tokens.forEach(t => {
-      if (p.indexOf(t.chunk) !== -1) {
-        matched = true;
-        t.matched = t.matched || true;
-      }
+      if (!p.includes(t)) features = intersection(features, tokenToFeatures[t]);
     });
-    if (matched) result.projects.push(p);
+    featureCandidates.forEach(
+      f => features.has(f) && items.push({feature: f, project: p})
+    );
   });
-
-  // prodduct & feature
-  // TODO sort by longest match
-  // TODO sort by recent used
-  products.forEach(p => {
-    let pMatched = false;
-    tokens.forEach(t => {
-      if (p.name.indexOf(t.chunk) !== -1 || p.path.indexOf(t.chunk) !== -1) {
-        pMatched = true;
-        t.matched = t.matched || true;
-      }
-    });
-    if (pMatched) result.products.push(p);
-
-    p.features.forEach(f => {
-      let fMatched = false;
-      tokens.forEach(t => {
-        if (f.name.indexOf(t.chunk) !== -1 || f.path.indexOf(t.chunk) !== -1) {
-          fMatched = true;
-          t.matched = t.matched || true;
-        }
-      });
-      if (fMatched) result.features.push(f);
-    });
-  });
-
-  const filled = tokens.every(t => t.matched);
-  if (!filled) return undefined;
-
-  // TODO return more descriptive model
-  return result;
+  return items;
 }

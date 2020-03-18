@@ -2,7 +2,7 @@ import {escapeXML as escape} from './util';
 import {products} from './products';
 import {detect} from './detector';
 import {JaunteState, StorageService} from './storage';
-import {searchCandidates} from './search';
+import {search, searchCandidates} from './search';
 
 const storage = new StorageService(chrome.storage.sync);
 
@@ -10,6 +10,9 @@ type SuggestCallback = (suggestResults: chrome.omnibox.SuggestResult[]) => void;
 
 class JauntePresenter {
   startState?: Promise<JaunteState>;
+
+  isInputtingProject = false;
+  selectedProject = '';
 
   onStart() {
     this.updateDefaultSuggestion('');
@@ -21,78 +24,31 @@ class JauntePresenter {
     if (input === '') return;
 
     const state = await this.startState!;
-    const result = searchCandidates(input, state);
+    const tokens = input.split(' ').filter(s => s !== '' && !/\s/.test(s));
+    const items = search(tokens, state, undefined);
 
-    const recentProjects = state.visitedProjectIdList || [];
+    console.log(items);
 
-    // TODO move these logics to search
-    if (result) {
-      console.log(result);
-
-      const projects = (result.projects.length !== 0
-        ? result.projects
-        : [...recentProjects]
-      ).splice(0, 3);
-      const hasConsoles =
-        result.products.length !== 0 || result.features.length !== 0;
-
-      if (hasConsoles) {
-        const suggests: chrome.omnibox.SuggestResult[] = [];
-        if (result.features.length !== 0) {
-          result.features.forEach(f => {
-            // awful search
-            const parent = products.find(p =>
-              p.features.some(i => i.path === f.path)
-            )!;
-            projects.forEach(p => {
-              const url = `https://console.cloud.google.com${f.path}?project=${p}`;
-              suggests.push({
-                content: url,
-                description: `<dim>${escape(
-                  parent.name
-                )}</dim> - <match>${escape(
-                  f.name
-                )}</match> / <dim>project:</dim> ${p} <url>${url}</url>`,
-              });
-            });
-          });
-        } else {
-          result.products.forEach(pd => {
-            projects.forEach(pj => {
-              const url = `https://console.cloud.google.com${pd.path}?project=${pj}`;
-              suggests.push({
-                content: url,
-                description: `<match>${escape(
-                  pd.name
-                )}</match> <dim>project:</dim> ${pj} <url>${url}</url>`,
-              });
-            });
-          });
-        }
-        console.log(suggests);
-        suggest(suggests);
-      } else {
-        // TODO handle matched project or recent project
-        suggest(
-          projects.map(projectId => {
-            const url = `https://console.cloud.google.com/?project=${projectId}`;
-            return {
-              content: url,
-              description: `<dim>project:</dim> ${projectId} <url>${url}</url>`,
-            };
-          })
-        );
-      }
-    } else {
-      this.updateDefaultSuggestion('', true);
+    if (0 <= items.length) {
       suggest(
-        recentProjects.map(projectId => {
+        items.map(i => {
+          const url = `https://console.cloud.google.com${i.feature.path}?project=${i.project}`;
+          const description = `<dim>${escape(
+            i.feature.productName
+          )}</dim> - ${escape(i.feature.name)} / <dim>project:</dim> ${
+            i.project
+          } <url>${url}</url>`;
+          return {content: url, description};
+        })
+      );
+    } else {
+      // TODO handle matched project or recent project
+      suggest(
+        (state.visitedProjectIdList || []).map(projectId => {
           const url = `https://console.cloud.google.com/?project=${projectId}`;
           return {
             content: url,
-            description: `<dim>project:</dim> ${escape(
-              projectId
-            )} <url>${url}</url>`,
+            description: `<dim>project:</dim> ${projectId} <url>${url}</url>`,
           };
         })
       );
