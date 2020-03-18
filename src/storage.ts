@@ -2,6 +2,8 @@
 
 type Storage = Pick<chrome.storage.StorageArea, 'set' | 'get' | 'remove'>;
 
+const maxProjects = 50;
+
 export interface JaunteState {
   visitedProjectIdList?: string[];
 }
@@ -46,12 +48,14 @@ export class StorageService {
     const current = this.state.visitedProjectIdList || [];
     const index = current.indexOf(projectId);
     if (0 < index) current.splice(index, 1);
-    const updated = [projectId].concat(current);
+
+    const update = [projectId].concat(current).slice(0, maxProjects);
+    console.log('updated', update);
 
     return new Promise((resolve, reject) => {
       this.storage.set(
         {
-          'projects.visited': updated,
+          'projects.visited': update,
         },
         () => {
           if (chrome.runtime.lastError) {
