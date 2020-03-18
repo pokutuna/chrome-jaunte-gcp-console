@@ -253,9 +253,9 @@ export const products: Product[] = [
     name: 'Vision',
     path: '/vision',
     features: [
-      {name: 'Dashboard', path: ''},
-      {name: 'Datasets', path: ''},
-      {name: 'Models', path: ''},
+      {name: 'Dashboard', path: '/vision/dashboard'},
+      {name: 'Datasets', path: '/vision/datasets'},
+      {name: 'Models', path: '/vision/models'},
       // listed on 2020-03-16
     ],
   },
