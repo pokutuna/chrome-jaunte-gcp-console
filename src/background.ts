@@ -1,8 +1,7 @@
 import {escapeXML as escape} from './util';
-import {products} from './products';
 import {detect} from './detector';
 import {JaunteState, StorageService} from './storage';
-import {search, searchCandidates} from './search';
+import {search} from './search';
 
 const storage = new StorageService(chrome.storage.sync);
 
@@ -29,7 +28,7 @@ class JauntePresenter {
 
     console.log(items);
 
-    if (0 <= items.length) {
+    if (0 < items.length) {
       suggest(
         items.map(i => {
           const url = `https://console.cloud.google.com${i.feature.path}?project=${i.project}`;
