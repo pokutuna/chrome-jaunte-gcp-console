@@ -7,11 +7,18 @@ interface FeatureCandidate extends Feature {
 }
 
 const featureCandidates = products.reduce((is, product) => {
-  const fs = product.features.map(f => ({
-    productName: product.name.toLowerCase(),
-    name: f.name.toLowerCase(),
-    path: f.path,
-  }));
+  const fs =
+    product.features.length !== 0
+      ? product.features.map(f => ({
+          productName: product.name.toLowerCase(),
+          name: f.name.toLowerCase(),
+          path: f.path,
+        }))
+      : {
+          productName: product.name,
+          name: product.name,
+          path: product.path,
+        };
   return is.concat(fs);
 }, [] as FeatureCandidate[]);
 
