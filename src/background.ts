@@ -53,7 +53,7 @@ class JauntePresenter {
     if (input === '') return;
 
     const state = await this.startState!;
-    const tokens = input.split(' ').filter(s => s !== '' && !/\s/.test(s));
+    const tokens = input.split(' ').filter(s => 1 < s.length && !/\s/.test(s));
     const items: MatchedItem[] = search(tokens, state, undefined);
 
     console.log(items);
