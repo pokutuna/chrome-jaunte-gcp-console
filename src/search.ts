@@ -57,17 +57,10 @@ export interface Item {
   feature: Feature;
 }
 
-export function search(
-  tokens: string[], // must be lower cased
-  state: JaunteState,
-  selectedProject: string | undefined
-): Item[] {
+export function search(tokens: string[], state: JaunteState): Item[] {
   tokens = tokens.map(t => t.toLocaleLowerCase());
 
-  const projects = selectedProject
-    ? [selectedProject]
-    : (state.visitedProjectIdList || []).slice(0, 10);
-
+  const projects = (state.visitedProjectIdList || []).slice(0, 8);
   const tokenToFeatures = featureCandidatesByToken(tokens);
 
   const items: Item[] = [];
