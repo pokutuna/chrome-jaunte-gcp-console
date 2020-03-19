@@ -2,46 +2,59 @@ import {products, Product, Feature} from './products';
 import {intersection} from './util';
 import {JaunteState} from './storage';
 
-interface FeatureCandidate extends Feature {
-  productName: string;
+interface FeatureCandidate {
+  product: Product;
+  feature: Feature;
+  lc: {
+    productName: string;
+    name: string;
+    path: string;
+  };
 }
 
-const featureCandidates = products.reduce((is, product) => {
+const candidates = products.reduce((is, product) => {
   const fs =
     product.features.length !== 0
       ? product.features.map(f => ({
-          productName: product.name.toLowerCase(),
-          name: f.name.toLowerCase(),
-          path: f.path,
+          feature: f,
+          product,
+          lc: {
+            productName: product.name.toLowerCase(),
+            name: f.name.toLowerCase(),
+            path: f.path,
+          },
         }))
       : {
-          productName: product.name,
-          name: product.name,
-          path: product.path,
+          feature: product, // Product satisfies Feature
+          product: product,
+          lc: {
+            productName: product.name.toLowerCase(),
+            name: product.name.toLowerCase(),
+            path: product.path,
+          },
         };
   return is.concat(fs);
 }, [] as FeatureCandidate[]);
 
-function match(input: string, feature: FeatureCandidate): boolean {
+function match(input: string, candidate: FeatureCandidate): boolean {
   return (
-    feature.productName.includes(input) ||
-    feature.name.includes(input) ||
-    feature.path.includes(input)
+    candidate.lc.productName.includes(input) ||
+    candidate.lc.name.includes(input) ||
+    candidate.lc.path.includes(input)
   );
 }
 
 function featureCandidatesByToken(tokens: string[]) {
   return tokens.reduce((m, t) => {
-    m[t] = new Set<FeatureCandidate>(
-      featureCandidates.filter(f => match(t, f))
-    );
+    m[t] = new Set<FeatureCandidate>(candidates.filter(c => match(t, c)));
     return m;
   }, {} as {[token: string]: Set<FeatureCandidate>});
 }
 
 export interface Item {
-  feature: FeatureCandidate;
   project: string;
+  product: Product;
+  feature: Feature;
 }
 
 export function search(
@@ -58,14 +71,18 @@ export function search(
   const tokenToFeatures = featureCandidatesByToken(tokens);
 
   const items: Item[] = [];
-  projects.forEach(p => {
-    let features = new Set(featureCandidates);
+  projects.forEach(project => {
+    let cands = new Set(candidates);
     tokens.forEach(t => {
-      if (!p.includes(t)) features = intersection(features, tokenToFeatures[t]);
+      if (!project.includes(t)) cands = intersection(cands, tokenToFeatures[t]);
     });
-    featureCandidates.forEach(
-      f => features.has(f) && items.push({feature: f, project: p})
-    );
+
+    // sort by candidates
+    candidates.forEach(f => {
+      if (cands.has(f))
+        items.push({feature: f.feature, product: f.product, project});
+    });
   });
+
   return items;
 }

@@ -1,11 +1,40 @@
-import {escapeXML as escape} from './util';
+import {escapeXML as escape, wrapMatchedWord} from './util';
 import {detect} from './detector';
 import {JaunteState, StorageService} from './storage';
 import {search} from './search';
+import {Feature, Product} from './products';
 
 const storage = new StorageService(chrome.storage.sync);
 
 type SuggestCallback = (suggestResults: chrome.omnibox.SuggestResult[]) => void;
+
+interface MatchedItem {
+  product: Product;
+  feature: Feature;
+  project: string;
+}
+
+const sep = '<dim>-</dim>';
+
+function formatMatchedItem(
+  inputs: string[],
+  item: MatchedItem
+): chrome.omnibox.SuggestResult {
+  const content = `https://console.cloud.google.com${item.feature.path}?project=${item.project}`;
+  const words = inputs.map(escape);
+  const wrapMatch = (input: string) =>
+    words.reduce(
+      (t, w) => wrapMatchedWord(t, w, ['<match>', '</match>']),
+      input
+    );
+
+  const parts = [item.product.name, item.feature.name, content]
+    .map(escape)
+    .map(wrapMatch);
+
+  const description = `<dim>${parts[0]}</dim> ${sep} ${parts[1]} ${sep} <url>${parts[2]}</url>`;
+  return {content, description};
+}
 
 class JauntePresenter {
   startState?: Promise<JaunteState>;
@@ -16,6 +45,7 @@ class JauntePresenter {
   onStart() {
     this.updateDefaultSuggestion('');
     this.startState = storage.getStates();
+    this.startState.then(s => console.log(s.visitedProjectIdList));
   }
 
   async onInput(input: string, suggest: SuggestCallback) {
@@ -24,22 +54,12 @@ class JauntePresenter {
 
     const state = await this.startState!;
     const tokens = input.split(' ').filter(s => s !== '' && !/\s/.test(s));
-    const items = search(tokens, state, undefined);
+    const items: MatchedItem[] = search(tokens, state, undefined);
 
     console.log(items);
 
     if (0 < items.length) {
-      suggest(
-        items.map(i => {
-          const url = `https://console.cloud.google.com${i.feature.path}?project=${i.project}`;
-          const description = `<dim>${escape(
-            i.feature.productName
-          )}</dim> - ${escape(i.feature.name)} / <dim>project:</dim> ${
-            i.project
-          } <url>${url}</url>`;
-          return {content: url, description};
-        })
-      );
+      suggest(items.map(i => formatMatchedItem(tokens, i)));
     } else {
       // TODO handle matched project or recent project
       suggest(
