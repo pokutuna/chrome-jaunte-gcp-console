@@ -1,6 +1,9 @@
 // using fields
 
-type Storage = Pick<chrome.storage.StorageArea, 'set' | 'get' | 'remove'>;
+export type BrowserStorage = Pick<
+  chrome.storage.StorageArea,
+  'set' | 'get' | 'remove'
+>;
 
 const maxProjects = 50;
 
@@ -9,12 +12,12 @@ export interface JaunteState {
 }
 
 export class StorageService {
-  storage: Storage;
+  storage: BrowserStorage;
 
   state: JaunteState = {};
   loaded = false;
 
-  constructor(storage: Storage) {
+  constructor(storage: BrowserStorage) {
     this.storage = storage;
   }
 
