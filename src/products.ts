@@ -260,3 +260,72 @@ export const products: Product[] = [
     ],
   },
 ];
+
+/**
+ * Resource is a reference to a concrete resource.
+ */
+export interface Resource {
+  /** Unique name of the resource. */
+  name: string;
+
+  /** Minimal path to the resource without query params. */
+  path: string;
+
+  /**
+   * Minimal query params to the resource.
+   * Don't append projectId.
+   */
+  query: {[key: string]: string};
+}
+
+export interface ResourceDefs {
+  /** Name of resources under a Product or Feature. */
+  name: string;
+
+  /** Path to a parent Product or Feature. */
+  parentPath: string;
+
+  /** Parse url to detect a Resource. */
+  parse(url: URL): Resource | undefined;
+}
+
+export const resources: ResourceDefs[] = [
+  {
+    name: 'Function',
+    parentPath: '/functions',
+    parse: (url: URL) => {
+      const pattern = /\/functions\/details\/(?:[^/]+)\/([^/]+)/;
+      const m = url.pathname.match(pattern);
+      if (!m) return undefined;
+      return {
+        name: m[1],
+        path: url.pathname,
+        query: {},
+      };
+    },
+  },
+  {
+    name: 'Service',
+    parentPath: '/appengine/versions',
+    parse: (url: URL) => {
+      const pattern = /\/appengine\/versions/;
+      const m = url.pathname.match(pattern);
+      const serviceId = url.searchParams.get('serviceId');
+      if (!m || !serviceId) return undefined;
+      return {
+        name: serviceId,
+        path: url.pathname,
+        query: {serviceId},
+      };
+    },
+  },
+];
+
+export function detectResource(url: URL): Resource | undefined {
+  let res: ReturnType<ResourceDefs['parse']> = undefined;
+  resources.find(r => {
+    res = r.parse(url);
+    return res ? true : false;
+  });
+  return res;
+}

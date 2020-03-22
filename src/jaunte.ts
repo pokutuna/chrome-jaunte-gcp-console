@@ -11,7 +11,6 @@ export function tokenize(input: string): string[] {
 
 export class Jaunte {
   storage: StorageService;
-  state?: Promise<JaunteState>;
 
   constructor(bs: BrowserStorage) {
     this.storage = new StorageService(bs);
@@ -19,15 +18,13 @@ export class Jaunte {
 
   onStart() {
     this.updateDefaultSuggestion('', false);
-    this.state = this.storage.getStates();
-    this.state.then(s => console.log(s.visitedProjectIdList));
   }
 
   async onInput(input: string, suggest: SuggestCallback) {
     if (input === '') return;
 
     const tokens = tokenize(input);
-    const state = await this.state!;
+    const state = await this.storage.getState();
     const items = search(tokens, state);
 
     console.log(items);
@@ -39,7 +36,7 @@ export class Jaunte {
       this.updateDefaultSuggestion(input, true);
       // todo replace
       suggest(
-        (state.visitedProjectIdList || []).map(projectId => {
+        state.projects.map(projectId => {
           const url = `https://console.cloud.google.com/?project=${projectId}`;
           return {
             content: url,
@@ -82,15 +79,26 @@ export class Jaunte {
     chrome.omnibox.setDefaultSuggestion({description});
   }
 
+  lastChecked: {[url: string]: number} = {};
+  isRecentCheckedURL(url: string): boolean {
+    const checkedAt = this.lastChecked[url] || 0;
+    const checked = Date.now() <= checkedAt + 3000;
+    if (!checked) {
+      this.lastChecked[url] = Date.now();
+    }
+    return checked;
+  }
+
   onTabsUpdateConsoleURL(
     _tabId: number,
     changeInfo: chrome.tabs.TabChangeInfo,
     tab: chrome.tabs.Tab
   ) {
     if (changeInfo.status !== 'complete' || !tab.url) return;
+    if (this.isRecentCheckedURL(tab.url)) return;
 
     const result = detect(tab.url);
-    if (result?.projectId)
-      this.storage.updateMostRecentProjectId(result.projectId);
+    console.log(tab.url, result);
+    if (result) this.storage.handleDetectionResult(result);
   }
 }

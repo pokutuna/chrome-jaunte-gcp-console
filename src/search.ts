@@ -60,7 +60,7 @@ export interface Item {
 export function search(tokens: string[], state: JaunteState): Item[] {
   tokens = tokens.map(t => t.toLocaleLowerCase());
 
-  const projects = (state.visitedProjectIdList || []).slice(0, 8);
+  const projects = state.projects.slice(0, 8);
   const tokenToFeatures = featureCandidatesByToken(tokens);
 
   const items: Item[] = [];

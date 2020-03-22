@@ -1,73 +1,111 @@
-// using fields
+import {Resource} from './products';
+import {DetectionResult} from './detector';
 
 export type BrowserStorage = Pick<
   chrome.storage.StorageArea,
   'set' | 'get' | 'remove'
 >;
 
-const maxProjects = 50;
+const maxProjects = 20;
+const maxResources = 30;
 
 export interface JaunteState {
-  visitedProjectIdList?: string[];
+  projects: string[];
+  featurePaths: string[];
+  resources: Resource[];
 }
 
 export class StorageService {
   storage: BrowserStorage;
 
-  state: JaunteState = {};
-  loaded = false;
+  lastState?: JaunteState;
 
   constructor(storage: BrowserStorage) {
     this.storage = storage;
   }
 
-  async getStates(): Promise<JaunteState> {
-    if (this.loaded) return Promise.resolve(this.state);
-    return this.loadStates();
+  async getState(): Promise<JaunteState> {
+    return this.lastState ? this.lastState : await this.loadStates();
   }
 
-  async loadStates(): Promise<JaunteState> {
-    return new Promise((resolve, reject) => {
-      this.storage.get(['projects.visited'], items => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError);
-          return;
-        }
-
-        const res = {
-          visitedProjectIdList: items['projects.visited'] || [],
-        };
-        this.state = res;
-        resolve(res);
-        return;
-      });
-    });
+  dropState() {
+    this.lastState = undefined;
   }
 
-  async updateMostRecentProjectId(projectId: string): Promise<void> {
-    if (this.state.visitedProjectIdList?.[0] === projectId) return;
-
-    // reorder
-    const current = this.state.visitedProjectIdList || [];
-    const index = current.indexOf(projectId);
-    if (0 < index) current.splice(index, 1);
-
-    const update = [projectId].concat(current).slice(0, maxProjects);
-    console.log('updated', update);
-
-    return new Promise((resolve, reject) => {
-      this.storage.set(
-        {
-          'projects.visited': update,
-        },
-        () => {
+  loadStates(): Promise<JaunteState> {
+    const p = new Promise<JaunteState>((resolve, reject) => {
+      this.storage.get(
+        ['projects', 'featurePaths', 'resources'],
+        (state: Partial<JaunteState>) => {
           if (chrome.runtime.lastError) {
             reject(chrome.runtime.lastError);
             return;
           }
-          resolve();
+
+          const res: JaunteState = {
+            projects: state.projects || [],
+            featurePaths: state.featurePaths || [],
+            resources: state.resources || [],
+          };
+          this.lastState = res;
+          resolve(res);
+          return;
         }
       );
     });
+    p.then(console.log);
+    return p;
+  }
+
+  updateState(state: Partial<JaunteState>): Promise<void> {
+    console.log('update', state);
+    return new Promise((resolve, reject) => {
+      this.storage.set(state, () => {
+        if (chrome.runtime.lastError) {
+          reject(chrome.runtime.lastError);
+          return;
+        }
+        this.dropState();
+        resolve();
+      });
+    });
+  }
+
+  checkUpdateAndReorder<T>(
+    state: T[],
+    value: T | undefined,
+    cmp: (a: T, b: T) => boolean,
+    keep: number
+  ): T[] | undefined {
+    if (!value) return;
+    if (cmp(state[0], value)) return;
+
+    const current = state;
+    const index = current.findIndex(v => cmp(v, value));
+    if (0 < index) current.splice(index, 1);
+    return [value, ...current.slice(0, keep)];
+  }
+
+  async handleDetectionResult(result: DetectionResult): Promise<void> {
+    const update: Partial<JaunteState> = {};
+    const state = await this.getState();
+
+    const projects = this.checkUpdateAndReorder(
+      state.projects,
+      result.projectId,
+      (a, b) => a === b,
+      maxProjects
+    );
+    if (projects) update.projects = projects;
+
+    const resources = this.checkUpdateAndReorder(
+      state.resources,
+      result.resource,
+      (a, b) => a && b && a.name === b.name && a.path === b.path,
+      maxResources
+    );
+    if (resources) update.resources = resources;
+
+    if (Object.keys(update).length !== 0) this.updateState(update);
   }
 }

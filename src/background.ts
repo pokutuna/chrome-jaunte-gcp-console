@@ -26,4 +26,4 @@ chrome.omnibox.onDeleteSuggestion.addListener(text => {
   console.log('onDeleteSuggestion', text);
 });
 
-chrome.tabs.onUpdated.addListener(jaunte.onTabsUpdateConsoleURL);
+chrome.tabs.onUpdated.addListener(jaunte.onTabsUpdateConsoleURL.bind(jaunte));
