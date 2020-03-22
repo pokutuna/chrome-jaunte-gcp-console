@@ -7,6 +7,7 @@ export type BrowserStorage = Pick<
 >;
 
 const maxProjects = 20;
+const maxFeatures = 20;
 const maxResources = 30;
 
 export interface JaunteState {
@@ -97,6 +98,14 @@ export class StorageService {
       maxProjects
     );
     if (projects) update.projects = projects;
+
+    const featurePaths = this.checkUpdateAndReorder(
+      state.featurePaths,
+      result.feature?.path,
+      (a, b) => a === b,
+      maxFeatures
+    );
+    if (featurePaths) update.featurePaths = featurePaths;
 
     const resources = this.checkUpdateAndReorder(
       state.resources,

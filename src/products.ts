@@ -320,12 +320,3 @@ export const resources: ResourceDefs[] = [
     },
   },
 ];
-
-export function detectResource(url: URL): Resource | undefined {
-  let res: ReturnType<ResourceDefs['parse']> = undefined;
-  resources.find(r => {
-    res = r.parse(url);
-    return res ? true : false;
-  });
-  return res;
-}
