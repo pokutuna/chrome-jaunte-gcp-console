@@ -1,4 +1,4 @@
-import {Resource} from './resource';
+import {Resource, equals as eqResources} from './resource';
 import {DetectionResult} from './detector';
 
 export type BrowserStorage = Pick<
@@ -110,7 +110,7 @@ export class StorageService {
     const resources = this.checkUpdateAndReorder(
       state.resources,
       result.resource,
-      (a, b) => a && b && a.uniqueName === b.uniqueName && a.path === b.path,
+      eqResources,
       maxResources
     );
     if (resources) update.resources = resources;

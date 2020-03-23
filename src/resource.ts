@@ -80,3 +80,14 @@ export const resources: ResourceDefs[] = [
     },
   },
 ];
+
+export function equals(a?: Resource, b?: Resource): boolean {
+  return a &&
+    b &&
+    a.name === b.name &&
+    a.uniqueName === b.uniqueName &&
+    a.path === b.path &&
+    a.project === b.project
+    ? true
+    : false;
+}
