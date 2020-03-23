@@ -53,14 +53,25 @@ function matchResource(input: string, resource: Resource): boolean {
   );
 }
 
-//function resourceToItem(resource: Resource): MatchedItem {
-//  return {
-//    project: resource.project,
-//    feature: {
-//      name:
-//    }
-//  }
-//}
+function resourceToItem(resource: Resource): MatchedItem {
+  // TODO fix models
+  const idx = resource.path.indexOf('/', 2);
+  const firstFragment =
+    idx !== -1 ? resource.path.slice(0, idx) : resource.path;
+  const product = products.find(p => p.path === firstFragment)!;
+
+  // TODO build path considering resource.query
+  const path = resource.path;
+
+  return {
+    project: resource.project,
+    product,
+    feature: {
+      name: [resource.name, resource.uniqueName].join(': '),
+      path,
+    },
+  };
+}
 
 function featureCandidatesByToken(tokens: string[]) {
   return tokens.reduce((m, t) => {
@@ -87,7 +98,7 @@ export function search(tokens: string[], state: JaunteState): MatchedItem[] {
   const resources = state.resources.slice(0, recentResourceSize);
   resources
     .filter(r => tokens.every(t => matchResource(t, r)))
-    .forEach(resource => {});
+    .forEach(r => items.push(resourceToItem(r)));
 
   // search projects * features
   const projects = state.projects.slice(0, recentProjectSize);

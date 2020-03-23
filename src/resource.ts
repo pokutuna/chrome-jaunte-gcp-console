@@ -25,17 +25,13 @@ export interface ResourceDefs {
   /** Name of resources under a Product or Feature. */
   name: string;
 
-  /** Path to a parent Product or Feature. */
-  parentPath: string;
-
   /** Parse url to detect a Resource. */
   parse(url: URL): Omit<Resource, 'project'> | undefined;
 }
 
 export const resources: ResourceDefs[] = [
   {
-    name: 'Function (Cloud Functions)',
-    parentPath: '/functions',
+    name: 'Function',
     parse: function(url: URL) {
       const pattern = /\/functions\/details\/(?:[^/]+)\/([^/]+)/;
       const m = url.pathname.match(pattern);
@@ -49,8 +45,7 @@ export const resources: ResourceDefs[] = [
     },
   },
   {
-    name: 'Service (App Engine)',
-    parentPath: '/appengine/versions',
+    name: 'Service',
     parse: function(url: URL) {
       const pattern = /\/appengine\/versions/;
       const m = url.pathname.match(pattern);
@@ -65,8 +60,7 @@ export const resources: ResourceDefs[] = [
     },
   },
   {
-    name: 'Service (Cloud Run)',
-    parentPath: '/run',
+    name: 'Service',
     parse: function(url: URL) {
       const pattern = /\/run\/detail\/(?:[^/]+)\/([^/]+)/;
       const m = url.pathname.match(pattern);
