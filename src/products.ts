@@ -283,6 +283,9 @@ export interface Resource {
    * Don't append projectId.
    */
   query: {[key: string]: string};
+
+  /** Project ID containign the resource. */
+  project: string;
 }
 
 export interface ResourceDefs {
@@ -293,7 +296,7 @@ export interface ResourceDefs {
   parentPath: string;
 
   /** Parse url to detect a Resource. */
-  parse(url: URL): Resource | undefined;
+  parse(url: URL): Omit<Resource, 'project'> | undefined;
 }
 
 export const resources: ResourceDefs[] = [

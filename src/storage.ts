@@ -93,7 +93,7 @@ export class StorageService {
 
     const projects = this.checkUpdateAndReorder(
       state.projects,
-      result.projectId,
+      result.project,
       (a, b) => a === b,
       maxProjects
     );

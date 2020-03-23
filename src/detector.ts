@@ -1,20 +1,20 @@
 import {Feature, Resource, products, resources} from './products';
 
 export interface DetectionResult {
-  projectId?: string;
+  project?: string;
   feature?: Feature;
   resource?: Resource;
 }
 
 export function detect(input: string): DetectionResult | null {
   const url = new URL(input);
-  const projectId = url.searchParams.get('project') || undefined;
+  const project = url.searchParams.get('project') || undefined;
   const feature = detectFeature(url);
-  const resource = detectResource(url);
+  const resource = project ? detectResource(url) : undefined;
   return {
-    projectId,
+    project,
     feature,
-    resource,
+    resource: resource ? {...resource, project: project!} : undefined,
   };
 }
 
@@ -29,8 +29,8 @@ function detectFeature(url: URL): Feature | undefined {
   );
 }
 
-function detectResource(url: URL): Resource | undefined {
-  let resource: Resource | undefined;
+function detectResource(url: URL): Omit<Resource, 'project'> | undefined {
+  let resource: Omit<Resource, 'project'> | undefined;
   resources.find(r => {
     resource = r.parse(url);
     return resource ? true : false;
