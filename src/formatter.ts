@@ -9,11 +9,13 @@ interface MatchedItem {
   project: string;
 }
 
+const console = 'https://console.cloud.google.com';
+
 export function formatMatchedItem(
   inputs: string[],
   item: MatchedItem
 ): chrome.omnibox.SuggestResult {
-  const content = `https://console.cloud.google.com${item.feature.path}?project=${item.project}`;
+  const content = `${console}${item.feature.path}?project=${item.project}`;
   const words = inputs.map(escape);
   const wrapMatch = (input: string) =>
     words.reduce(
@@ -28,3 +30,9 @@ export function formatMatchedItem(
   const description = `<dim>${parts[0]}</dim>${sep}${parts[1]}${sep}<url>${parts[2]}</url>`;
   return {content, description};
 }
+
+export function defaultInputHelper(input: string): string {
+  return `<dim>[ GCP Products | Projects | Resources | URL ] <match>${input}</match></dim>`;
+}
+
+export const emptyResult = '<dim>Emtpy Result</dim>';

@@ -1,7 +1,7 @@
 import {BrowserStorage, JaunteState, StorageService} from './storage';
 import {detect} from './detector';
 import {search} from './search';
-import {formatMatchedItem} from './formatter';
+import * as format from './formatter';
 import {extractURL} from './util';
 
 type SuggestCallback = (suggestResults: chrome.omnibox.SuggestResult[]) => void;
@@ -32,7 +32,7 @@ export class Jaunte {
 
     if (0 < items.length) {
       this.updateDefaultSuggestion(input, false);
-      suggest(items.map(i => formatMatchedItem(tokens, i)));
+      suggest(items.map(i => format.formatMatchedItem(tokens, i)));
     } else {
       this.updateDefaultSuggestion(input, true);
       // todo replace
@@ -73,11 +73,9 @@ export class Jaunte {
   }
 
   updateDefaultSuggestion(input: string, noResult?: boolean) {
-    let description =
-      '<dim>[ GCP Products | Projects | Resources | URL ]</dim>';
-    if (noResult) {
-      description = '<dim>Emtpy Result</dim>';
-    }
+    const description = noResult
+      ? format.emptyResult
+      : format.defaultInputHelper(input);
     chrome.omnibox.setDefaultSuggestion({description});
   }
 
