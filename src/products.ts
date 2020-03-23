@@ -80,6 +80,13 @@ export const products: Product[] = [
       // listed on 2020-03-16
     ],
   },
+  {
+    name: 'Cloud Run',
+    path: '/run',
+    features: [
+      // listed on 2020-03-24
+    ],
+  },
 
   /* Category: Storage */
   {
@@ -316,6 +323,20 @@ export const resources: ResourceDefs[] = [
         name: serviceId,
         path: url.pathname,
         query: {serviceId},
+      };
+    },
+  },
+  {
+    name: 'Service',
+    parentPath: '/run',
+    parse: (url: URL) => {
+      const pattern = /\/run\/detail\/(?:[^/]+)\/([^/]+)/;
+      const m = url.pathname.match(pattern);
+      if (!m) return undefined;
+      return {
+        name: m[1],
+        path: url.pathname,
+        query: {},
       };
     },
   },
