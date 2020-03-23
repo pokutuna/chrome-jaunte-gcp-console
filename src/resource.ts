@@ -34,7 +34,7 @@ export interface ResourceDefs {
 
 export const resources: ResourceDefs[] = [
   {
-    name: 'Function',
+    name: 'Function (Cloud Functions)',
     parentPath: '/functions',
     parse: function(url: URL) {
       const pattern = /\/functions\/details\/(?:[^/]+)\/([^/]+)/;
@@ -49,7 +49,7 @@ export const resources: ResourceDefs[] = [
     },
   },
   {
-    name: 'Service',
+    name: 'Service (App Engine)',
     parentPath: '/appengine/versions',
     parse: function(url: URL) {
       const pattern = /\/appengine\/versions/;
@@ -65,7 +65,7 @@ export const resources: ResourceDefs[] = [
     },
   },
   {
-    name: 'Service',
+    name: 'Service (Cloud Run)',
     parentPath: '/run',
     parse: function(url: URL) {
       const pattern = /\/run\/detail\/(?:[^/]+)\/([^/]+)/;
