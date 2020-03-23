@@ -1,4 +1,5 @@
 import {products, Product, Feature} from './products';
+import {Resource} from './resource';
 import {intersection} from './util';
 import {JaunteState} from './storage';
 
@@ -43,6 +44,23 @@ function match(input: string, candidate: FeatureCandidate): boolean {
     candidate.lc.path.includes(input)
   );
 }
+
+function matchResource(input: string, resource: Resource): boolean {
+  return (
+    resource.uniqueName.toLowerCase().includes(input) ||
+    resource.path.toLowerCase().includes(input) ||
+    resource.project.toLowerCase().includes(input)
+  );
+}
+
+//function resourceToItem(resource: Resource): MatchedItem {
+//  return {
+//    project: resource.project,
+//    feature: {
+//      name:
+//    }
+//  }
+//}
 
 function featureCandidatesByToken(tokens: string[]) {
   return tokens.reduce((m, t) => {

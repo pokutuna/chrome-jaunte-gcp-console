@@ -1,4 +1,5 @@
-import {Feature, Resource, products, resources} from './products';
+import {Feature, products} from './products';
+import {Resource, resources} from './resource';
 
 export interface DetectionResult {
   project?: string;

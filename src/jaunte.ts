@@ -1,4 +1,4 @@
-import {BrowserStorage, JaunteState, StorageService} from './storage';
+import {BrowserStorage, StorageService} from './storage';
 import {detect} from './detector';
 import {search} from './search';
 import * as format from './formatter';
