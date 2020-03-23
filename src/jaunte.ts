@@ -2,6 +2,7 @@ import {BrowserStorage, JaunteState, StorageService} from './storage';
 import {detect} from './detector';
 import {search} from './search';
 import {formatMatchedItem} from './formatter';
+import {extractURL} from './util';
 
 type SuggestCallback = (suggestResults: chrome.omnibox.SuggestResult[]) => void;
 
@@ -47,11 +48,12 @@ export class Jaunte {
     }
   }
 
-  onEnter(url: string, disposition: chrome.omnibox.OnInputEnteredDisposition) {
-    if (!/^https?:\/\//.test(url)) {
-      console.error(`Content must be a URL: ${url}`);
-      return;
-    }
+  onEnter(
+    input: string,
+    disposition: chrome.omnibox.OnInputEnteredDisposition
+  ) {
+    const url = extractURL(input);
+    if (!url) return;
 
     switch (disposition) {
       case 'currentTab':
