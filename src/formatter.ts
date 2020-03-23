@@ -1,6 +1,5 @@
 import {escapeXML as escape, wrapMatchedWord} from './util';
-import {Feature, Product} from './products';
-import {Item} from './search';
+import {MatchedItem} from './search';
 
 const sep = ' <dim>-</dim> ';
 
@@ -8,7 +7,7 @@ const console = 'https://console.cloud.google.com';
 
 export function formatMatchedItem(
   inputs: string[],
-  item: Item
+  item: MatchedItem
 ): chrome.omnibox.SuggestResult {
   const content = `${console}${item.feature.path}?project=${item.project}`;
   const words = inputs.map(escape);

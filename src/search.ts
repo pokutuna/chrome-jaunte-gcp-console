@@ -51,19 +51,29 @@ function featureCandidatesByToken(tokens: string[]) {
   }, {} as {[token: string]: Set<FeatureCandidate>});
 }
 
-export interface Item {
+const recentResourceSize = 20;
+const recentProjectSize = 8;
+
+export interface MatchedItem {
   project: string;
   product: Product;
   feature: Feature;
 }
 
-export function search(tokens: string[], state: JaunteState): Item[] {
+export function search(tokens: string[], state: JaunteState): MatchedItem[] {
   tokens = tokens.map(t => t.toLocaleLowerCase());
 
-  const projects = state.projects.slice(0, 8);
-  const tokenToFeatures = featureCandidatesByToken(tokens);
+  const items: MatchedItem[] = [];
 
-  const items: Item[] = [];
+  // search recent resources
+  const resources = state.resources.slice(0, recentResourceSize);
+  resources
+    .filter(r => tokens.every(t => matchResource(t, r)))
+    .forEach(resource => {});
+
+  // search projects * features
+  const projects = state.projects.slice(0, recentProjectSize);
+  const tokenToFeatures = featureCandidatesByToken(tokens);
   projects.forEach(project => {
     let cands = new Set(candidates);
     tokens.forEach(t => {
