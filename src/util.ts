@@ -10,7 +10,7 @@ export function escapeXML(input: string): string {
 export function wrapMatchedWord(
   text: string,
   word: string,
-  w: [string, string]
+  w: [string, string],
 ): string {
   const idx = text.toLowerCase().indexOf(word.toLowerCase());
   if (idx === -1) return text;
@@ -38,7 +38,7 @@ export function intersection<T>(a: Set<T>, b: Set<T>): Set<T> {
 
 export function extractURL(input: string): string | undefined {
   const m = input.match(
-    /(https?:\/\/[\w-]+(?:\.[\w-]+)*\.?(?::\d*)?(?:[/?#][\w!#$%&'()*+,\-./:;=?@~]*)?)/
+    /(https?:\/\/[\w-]+(?:\.[\w-]+)*\.?(?::\d*)?(?:[/?#][\w!#$%&'()*+,\-./:;=?@~]*)?)/,
   );
   return m ? m[1] : undefined;
 }

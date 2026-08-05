@@ -1,5 +1,5 @@
-import {Resource, equals as eqResources} from './resource';
 import {DetectionResult} from './detector';
+import {Resource, equals as eqResources} from './resource';
 
 export type BrowserStorage = Pick<
   chrome.storage.StorageArea,
@@ -51,7 +51,7 @@ export class StorageService {
           this.lastState = res;
           resolve(res);
           return;
-        }
+        },
       );
     });
     p.then(console.log);
@@ -76,7 +76,7 @@ export class StorageService {
     state: T[],
     value: T | undefined,
     cmp: (a: T, b: T) => boolean,
-    keep: number
+    keep: number,
   ): T[] | undefined {
     if (!value) return;
     if (cmp(state[0], value)) return;
@@ -95,7 +95,7 @@ export class StorageService {
       state.projects,
       result.project,
       (a, b) => a === b,
-      maxProjects
+      maxProjects,
     );
     if (projects) update.projects = projects;
 
@@ -103,7 +103,7 @@ export class StorageService {
       state.featurePaths,
       result.feature?.path,
       (a, b) => a === b,
-      maxFeatures
+      maxFeatures,
     );
     if (featurePaths) update.featurePaths = featurePaths;
 
@@ -111,7 +111,7 @@ export class StorageService {
       state.resources,
       result.resource,
       eqResources,
-      maxResources
+      maxResources,
     );
     if (resources) update.resources = resources;
 

@@ -1,5 +1,5 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "Jaunte GCP Console",
   "description": "<from package.json>",
   "version": "<from package.json>",
@@ -12,9 +12,10 @@
 
   "omnibox": {"keyword": "g"},
   "background": {
-    "scripts": ["background.js"],
-    "persistent": false
+    "service_worker": "background.js",
+    "type": "module"
   },
 
-  "permissions": ["activeTab", "storage", "https://console.cloud.google.com/*"]
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": ["https://console.cloud.google.com/*"]
 }

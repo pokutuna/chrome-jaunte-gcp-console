@@ -26,7 +26,7 @@ function detectFeature(url: URL): Feature | undefined {
       pathname.startsWith(p.path) && (res?.path?.length || 0) < p.path.length
         ? p
         : res,
-    undefined as Feature | undefined
+    undefined as Feature | undefined,
   );
 }
 

@@ -1,19 +1,36 @@
 {
-  "extends": "./node_modules/gts/tsconfig-google.json",
   "compilerOptions": {
-    "lib": [
-      "DOM",
-      "ES2018",
-    ],
-    "module": "ES2015",
+    // Inlined from gts's tsconfig-google.json (previously extended via
+    // ./node_modules/gts/tsconfig-google.json) now that gts has been removed.
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "forceConsistentCasingInFileNames": true,
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUncheckedSideEffectImports": true,
+    "pretty": true,
+    "stripInternal": true,
+    "strict": true,
+    "target": "ES2022",
+
+    "lib": ["dom", "ES2022"],
+    "allowJs": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "types": ["chrome", "node"],
     "declaration": false,
-    "rootDir": ".",
-    "outDir": "build"
+    "composite": false,
+    "skipLibCheck": true
   },
   "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "src/**/*.test.ts"
+    "src/**/*",
+    "scripts/**/*",
+    "vite.config.ts",
+    "vitest.config.ts"
   ]
 }

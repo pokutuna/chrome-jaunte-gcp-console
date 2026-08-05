@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "vitest"],
+  "categories": {
+    "correctness": "error"
+  },
+  "env": {
+    "builtin": true,
+    "browser": true,
+    "node": true
+  },
+  "globals": {
+    "chrome": "readonly"
+  },
+  "ignorePatterns": ["build/**", "node_modules/**"],
+  "rules": {
+    // console.log is used intentionally for debugging in this extension;
+    // keep it allowed rather than stripping existing behavior.
+    "no-console": "off"
+  }
+}

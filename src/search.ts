@@ -1,7 +1,7 @@
 import {products, Product, Feature} from './products';
 import {Resource} from './resource';
-import {intersection} from './util';
 import {JaunteState} from './storage';
+import {intersection} from './util';
 
 interface FeatureCandidate {
   product: Product;
@@ -74,10 +74,13 @@ function resourceToItem(resource: Resource): MatchedItem {
 }
 
 function featureCandidatesByToken(tokens: string[]) {
-  return tokens.reduce((m, t) => {
-    m[t] = new Set<FeatureCandidate>(candidates.filter(c => match(t, c)));
-    return m;
-  }, {} as {[token: string]: Set<FeatureCandidate>});
+  return tokens.reduce(
+    (m, t) => {
+      m[t] = new Set<FeatureCandidate>(candidates.filter(c => match(t, c)));
+      return m;
+    },
+    {} as {[token: string]: Set<FeatureCandidate>},
+  );
 }
 
 const recentResourceSize = 20;

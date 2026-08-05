@@ -1,7 +1,7 @@
-import {BrowserStorage, StorageService} from './storage';
 import {detect} from './detector';
-import {search} from './search';
 import * as format from './formatter';
+import {search} from './search';
+import {BrowserStorage, StorageService} from './storage';
 import {extractURL} from './util';
 
 type SuggestCallback = (suggestResults: chrome.omnibox.SuggestResult[]) => void;
@@ -43,14 +43,14 @@ export class Jaunte {
             content: url,
             description: `<dim>project:</dim> ${projectId} <url>${url}</url>`,
           };
-        })
+        }),
       );
     }
   }
 
   onEnter(
     input: string,
-    disposition: chrome.omnibox.OnInputEnteredDisposition
+    disposition: `${chrome.omnibox.OnInputEnteredDisposition}`,
   ) {
     const url = extractURL(input);
     if (!url) return;
@@ -91,8 +91,8 @@ export class Jaunte {
 
   onTabsUpdateConsoleURL(
     _tabId: number,
-    changeInfo: chrome.tabs.TabChangeInfo,
-    tab: chrome.tabs.Tab
+    changeInfo: chrome.tabs.OnUpdatedInfo,
+    tab: chrome.tabs.Tab,
   ) {
     if (changeInfo.status !== 'complete' || !tab.url) return;
     if (this.isRecentCheckedURL(tab.url)) return;

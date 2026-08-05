@@ -32,7 +32,7 @@ export interface ResourceDefs {
 export const resources: ResourceDefs[] = [
   {
     name: 'Function',
-    parse: function(url: URL) {
+    parse: function (url: URL) {
       const pattern = /\/functions\/details\/(?:[^/]+)\/([^/]+)/;
       const m = url.pathname.match(pattern);
       if (!m) return undefined;
@@ -46,7 +46,7 @@ export const resources: ResourceDefs[] = [
   },
   {
     name: 'Service',
-    parse: function(url: URL) {
+    parse: function (url: URL) {
       const pattern = /\/appengine\/versions/;
       const m = url.pathname.match(pattern);
       const serviceId = url.searchParams.get('serviceId');
@@ -61,7 +61,7 @@ export const resources: ResourceDefs[] = [
   },
   {
     name: 'Service',
-    parse: function(url: URL) {
+    parse: function (url: URL) {
       const pattern = /\/run\/detail\/(?:[^/]+)\/([^/]+)/;
       const m = url.pathname.match(pattern);
       if (!m) return undefined;

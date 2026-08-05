@@ -1,9 +1,11 @@
+import {expect, test} from 'vitest';
+
 import * as util from './util';
 
 test('escapeXML', () => {
   expect(util.escapeXML('IAM & Admin')).toBe('IAM &amp; Admin');
   expect(util.escapeXML('<element attribute="value" />')).toBe(
-    '&lt;element attribute=&quot;value&quot; /&gt;'
+    '&lt;element attribute=&quot;value&quot; /&gt;',
   );
 });
 
@@ -41,7 +43,7 @@ test('wrapMatchedWord', () => {
   ];
 
   cases.forEach(c =>
-    expect(util.wrapMatchedWord(c.text, c.word, c.w)).toBe(c.expect)
+    expect(util.wrapMatchedWord(c.text, c.word, c.w)).toBe(c.expect),
   );
 });
 
