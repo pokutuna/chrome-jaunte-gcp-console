@@ -11,8 +11,73 @@ export interface Candidate {
   score: number;
 }
 
+export interface Query {
+  terms: string[];
+  projectFilters: string[];
+  serviceFilters: string[];
+}
+
 const topProjectsCount = 5;
 const maxResults = 8;
+
+const projectPrefixes = ['p:', 'project:'];
+const servicePrefixes = ['s:', 'service:'];
+
+/**
+ * Split tokens into filter tokens (`p:`/`project:`/`s:`/`service:`) and
+ * plain search terms. Tokens are expected to already be lower-cased.
+ */
+export function parseQuery(tokens: string[]): Query {
+  const terms: string[] = [];
+  const projectFilters: string[] = [];
+  const serviceFilters: string[] = [];
+
+  for (const token of tokens) {
+    const projectPrefix = projectPrefixes.find(p => token.startsWith(p));
+    if (projectPrefix) {
+      const value = token.slice(projectPrefix.length);
+      if (value.length > 0) projectFilters.push(value);
+      continue;
+    }
+
+    const servicePrefix = servicePrefixes.find(p => token.startsWith(p));
+    if (servicePrefix) {
+      const value = token.slice(servicePrefix.length);
+      if (value.length > 0) serviceFilters.push(value);
+      continue;
+    }
+
+    terms.push(token);
+  }
+
+  return {terms, projectFilters, serviceFilters};
+}
+
+/** True if a service matches any of the given service filters (OR). */
+function serviceMatchesFilters(
+  service: ServiceDef,
+  serviceFilters: string[],
+): boolean {
+  if (serviceFilters.length === 0) return true;
+  return serviceFilters.some(filter => {
+    if (service.id.toLowerCase().includes(filter)) return true;
+    if (service.name.toLowerCase().includes(filter)) return true;
+    return (service.aliases || []).some(alias =>
+      alias.toLowerCase().includes(filter),
+    );
+  });
+}
+
+/** True if a project matches any of the given project filters (OR). */
+function projectMatchesFilters(
+  project: string | undefined,
+  projectFilters: string[],
+): boolean {
+  if (projectFilters.length === 0) return true;
+  if (!project) return false;
+  const lower = project.toLowerCase();
+  return projectFilters.some(filter => lower.includes(filter));
+}
 
 /** Pages that can be jumped to without any resource-specific param. */
 function isParamFreePage(page: PageDef): boolean {
@@ -86,15 +151,17 @@ function matchScore(
 }
 
 export function search(
-  tokens: string[],
+  query: Query,
   services: ServiceDef[],
   state: VisitState,
   now: number,
 ): Candidate[] {
+  const {terms, projectFilters, serviceFilters} = query;
+  const hasFilters = projectFilters.length > 0 || serviceFilters.length > 0;
   const candidates: Candidate[] = [];
 
-  if (tokens.length === 0) {
-    // No tokens: list visited candidates by frecency.
+  if (terms.length === 0 && !hasFilters) {
+    // No tokens at all: list visited candidates by frecency.
     const sorted = [...state.visits].sort(
       (a, b) => frecency(b, now) - frecency(a, now),
     );
@@ -121,21 +188,31 @@ export function search(
     for (const visit of state.visits) {
       const found = findPage(services, visit.pageId);
       if (!found) continue;
+      const {service, page} = found;
+
+      if (!serviceMatchesFilters(service, serviceFilters)) continue;
+      if (!projectMatchesFilters(visit.project, projectFilters)) continue;
+
       const url = buildUrl(services, visit);
       if (!url) continue;
-      const {service, page} = found;
       const resourceName = page.resource
         ? visit.params[page.resource.nameParam]
         : undefined;
 
-      const matched = matchScore(tokens, {
-        resourceName,
-        pageName: page.name,
-        serviceName: service.name,
-        aliases: service.aliases,
-        pageAliases: page.aliases,
-        project: visit.project,
-      });
+      let matched: number | undefined;
+      if (terms.length === 0) {
+        // No search terms: filters alone gate inclusion, treat as matched.
+        matched = 1;
+      } else {
+        matched = matchScore(terms, {
+          resourceName,
+          pageName: page.name,
+          serviceName: service.name,
+          aliases: service.aliases,
+          pageAliases: page.aliases,
+          project: visit.project,
+        });
+      }
       if (matched === undefined) continue;
 
       const score = matched * (1 + Math.log2(1 + frecency(visit, now)));
@@ -150,22 +227,37 @@ export function search(
     }
 
     // Catalog x project candidates.
-    const topProjects = [...state.projects]
-      .sort((a, b) => frecency(b, now) - frecency(a, now))
-      .slice(0, topProjectsCount);
+    // With a project filter, search state.projects entirely (matching the
+    // filter) instead of only the top N by frecency, so rarely-used
+    // projects remain reachable.
+    const projectCandidates =
+      projectFilters.length > 0
+        ? state.projects.filter(p =>
+            projectMatchesFilters(p.project, projectFilters),
+          )
+        : [...state.projects]
+            .sort((a, b) => frecency(b, now) - frecency(a, now))
+            .slice(0, topProjectsCount);
 
-    for (const projectVisit of topProjects) {
+    for (const projectVisit of projectCandidates) {
       for (const service of services) {
+        if (!serviceMatchesFilters(service, serviceFilters)) continue;
+
         for (const page of service.pages) {
           if (!isParamFreePage(page)) continue;
 
-          const matched = matchScore(tokens, {
-            pageName: page.name,
-            serviceName: service.name,
-            aliases: service.aliases,
-            pageAliases: page.aliases,
-            project: projectVisit.project,
-          });
+          let matched: number | undefined;
+          if (terms.length === 0) {
+            matched = 1;
+          } else {
+            matched = matchScore(terms, {
+              pageName: page.name,
+              serviceName: service.name,
+              aliases: service.aliases,
+              pageAliases: page.aliases,
+              project: projectVisit.project,
+            });
+          }
           if (matched === undefined) continue;
 
           const url = buildUrl(services, {

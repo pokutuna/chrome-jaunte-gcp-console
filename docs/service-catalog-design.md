@@ -79,6 +79,15 @@ Every token must match some field (AND). Resource-name matches weigh most
 (prefix > substring), then names/aliases, then project. Results are deduped
 by URL and capped at 8. Empty input lists visited entries by frecency.
 
+`parseQuery` splits tokens into explicit filters and plain search terms:
+`p:<text>`/`project:<text>` filters by project, `s:<text>`/`service:<text>`
+filters by service (id, name, or alias). Same-kind filters OR, different
+kinds AND; filters narrow the candidate set but don't affect scoring. With a
+project filter, the catalog x project source searches all known projects
+(not just the top 5 by frecency), so rarely-used projects stay reachable.
+With filters but no terms, both sources are included unconditionally and
+ranked by the usual frecency-based boost.
+
 ## Adding a service
 
 See the doc comment in `src/services/index.ts`. In short: add

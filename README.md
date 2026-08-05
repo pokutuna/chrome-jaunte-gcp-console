@@ -6,7 +6,8 @@ console pages from the omnibox.
 
 Type <kbd>g</kbd> + <kbd>Space</kbd> in the address bar, then a few tokens —
 a resource name, a service abbreviation like `gcs`, a project ID — and jump
-straight to the page you have in mind.
+straight to the page you have in mind. Narrow down with explicit filters:
+`s:run api` (service) or `p:my-proj log` (project).
 
 ## How it works
 

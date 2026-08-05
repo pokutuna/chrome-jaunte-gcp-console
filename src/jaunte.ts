@@ -1,6 +1,6 @@
 import {matchUrl, ServiceDef} from './catalog.ts';
 import * as format from './formatter.ts';
-import {search} from './search.ts';
+import {parseQuery, search} from './search.ts';
 import {extractURL} from './util.ts';
 import {VisitStore} from './visits.ts';
 
@@ -30,15 +30,16 @@ export class Jaunte {
     if (input === '') return;
 
     const tokens = tokenize(input).map(t => t.toLowerCase());
+    const query = parseQuery(tokens);
     const state = await this.store.getState();
     const now = Date.now();
-    const candidates = search(tokens, this.services, state, now);
+    const candidates = search(query, this.services, state, now);
 
     console.log(candidates);
 
     if (0 < candidates.length) {
       this.updateDefaultSuggestion(input, false);
-      suggest(candidates.map(c => format.formatCandidate(tokens, c)));
+      suggest(candidates.map(c => format.formatCandidate(query.terms, c)));
     } else {
       this.updateDefaultSuggestion(input, true);
       suggest(
