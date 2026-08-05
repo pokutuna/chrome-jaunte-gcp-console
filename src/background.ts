@@ -1,6 +1,9 @@
-import {Jaunte} from './jaunte';
+import {Jaunte} from './jaunte.ts';
+import {services} from './services/index.ts';
+import {VisitStore} from './visits.ts';
 
-const jaunte = new Jaunte(chrome.storage.sync);
+const store = new VisitStore(chrome.storage.local, chrome.storage.sync);
+const jaunte = new Jaunte(store, services);
 
 chrome.omnibox.onInputStarted.addListener(() => {
   console.log('onInputStarted');
@@ -26,4 +29,16 @@ chrome.omnibox.onDeleteSuggestion.addListener(text => {
   console.log('onDeleteSuggestion', text);
 });
 
-chrome.tabs.onUpdated.addListener(jaunte.onTabsUpdateConsoleURL.bind(jaunte));
+const consoleUrlFilter: chrome.webNavigation.WebNavigationEventFilter = {
+  url: [{hostEquals: 'console.cloud.google.com'}],
+};
+
+chrome.webNavigation.onCompleted.addListener(details => {
+  if (details.frameId !== 0) return;
+  jaunte.onNavigation(details.url);
+}, consoleUrlFilter);
+
+chrome.webNavigation.onHistoryStateUpdated.addListener(details => {
+  if (details.frameId !== 0) return;
+  jaunte.onNavigation(details.url);
+}, consoleUrlFilter);

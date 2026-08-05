@@ -1,32 +1,30 @@
-import {MatchedItem} from './search';
-import {escapeXML as escape, wrapMatchedWord} from './util';
+import {Candidate} from './search.ts';
+import {escapeXML as escape, wrapMatchedWord} from './util.ts';
 
 const sep = ' <dim>-</dim> ';
 
-const console = 'https://console.cloud.google.com';
-
-export function formatMatchedItem(
-  inputs: string[],
-  item: MatchedItem,
+export function formatCandidate(
+  tokens: string[],
+  c: Candidate,
 ): chrome.omnibox.SuggestResult {
-  const content = `${console}${item.feature.path}?project=${item.project}`;
-  const words = inputs.map(escape);
+  const label = c.resourceName
+    ? `${c.resourceName} (${c.page.resource!.kind})`
+    : c.page.name;
+
   const wrapMatch = (input: string) =>
-    words.reduce(
-      (t, w) => wrapMatchedWord(t, w, ['<match>', '</match>']),
+    tokens.reduce(
+      (t, w) => wrapMatchedWord(t, escape(w), ['<match>', '</match>']),
       input,
     );
 
-  const parts = [item.product.name, item.feature.name, content]
-    .map(escape)
-    .map(wrapMatch);
+  const parts = [c.service.name, label, c.url].map(escape).map(wrapMatch);
 
   const description = `<dim>${parts[0]}</dim>${sep}${parts[1]}${sep}<url>${parts[2]}</url>`;
-  return {content, description};
+  return {content: c.url, description};
 }
 
 export function defaultInputHelper(input: string): string {
-  return `<dim>[ GCP Products | Projects | Resources | URL ] <match>${input}</match></dim>`;
+  return `<dim>[ GCP Services | Projects | Resources | URL ] <match>${escape(input)}</match></dim>`;
 }
 
-export const emptyResult = '<dim>Emtpy Result</dim>';
+export const emptyResult = '<dim>Empty Result</dim>';

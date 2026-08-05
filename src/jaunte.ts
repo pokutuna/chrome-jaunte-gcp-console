@@ -1,8 +1,8 @@
-import {detect} from './detector';
-import * as format from './formatter';
-import {search} from './search';
-import {BrowserStorage, StorageService} from './storage';
-import {extractURL} from './util';
+import {matchUrl, ServiceDef} from './catalog.ts';
+import * as format from './formatter.ts';
+import {search} from './search.ts';
+import {extractURL} from './util.ts';
+import {VisitStore} from './visits.ts';
 
 type SuggestCallback = (suggestResults: chrome.omnibox.SuggestResult[]) => void;
 
@@ -10,11 +10,16 @@ export function tokenize(input: string): string[] {
   return input.split(' ').filter(s => 1 < s.length && !/\s/.test(s));
 }
 
-export class Jaunte {
-  storage: StorageService;
+const recentCheckWindowMs = 3000;
 
-  constructor(bs: BrowserStorage) {
-    this.storage = new StorageService(bs);
+export class Jaunte {
+  private store: VisitStore;
+  private services: ServiceDef[];
+  private lastChecked: {[url: string]: number} = {};
+
+  constructor(store: VisitStore, services: ServiceDef[]) {
+    this.store = store;
+    this.services = services;
   }
 
   onStart() {
@@ -24,24 +29,24 @@ export class Jaunte {
   async onInput(input: string, suggest: SuggestCallback) {
     if (input === '') return;
 
-    const tokens = tokenize(input);
-    const state = await this.storage.getState();
-    const items = search(tokens, state);
+    const tokens = tokenize(input).map(t => t.toLowerCase());
+    const state = await this.store.getState();
+    const now = Date.now();
+    const candidates = search(tokens, this.services, state, now);
 
-    console.log(items);
+    console.log(candidates);
 
-    if (0 < items.length) {
+    if (0 < candidates.length) {
       this.updateDefaultSuggestion(input, false);
-      suggest(items.map(i => format.formatMatchedItem(tokens, i)));
+      suggest(candidates.map(c => format.formatCandidate(tokens, c)));
     } else {
       this.updateDefaultSuggestion(input, true);
-      // todo replace
       suggest(
-        state.projects.map(projectId => {
-          const url = `https://console.cloud.google.com/?project=${projectId}`;
+        state.projects.map(({project}) => {
+          const url = `https://console.cloud.google.com/?project=${project}`;
           return {
             content: url,
-            description: `<dim>project:</dim> ${projectId} <url>${url}</url>`,
+            description: `<dim>project:</dim> ${project} <url>${url}</url>`,
           };
         }),
       );
@@ -79,26 +84,26 @@ export class Jaunte {
     chrome.omnibox.setDefaultSuggestion({description});
   }
 
-  lastChecked: {[url: string]: number} = {};
-  isRecentCheckedURL(url: string): boolean {
+  private isRecentlyChecked(url: string): boolean {
     const checkedAt = this.lastChecked[url] || 0;
-    const checked = Date.now() <= checkedAt + 3000;
+    const checked = Date.now() <= checkedAt + recentCheckWindowMs;
     if (!checked) {
       this.lastChecked[url] = Date.now();
     }
     return checked;
   }
 
-  onTabsUpdateConsoleURL(
-    _tabId: number,
-    changeInfo: chrome.tabs.OnUpdatedInfo,
-    tab: chrome.tabs.Tab,
-  ) {
-    if (changeInfo.status !== 'complete' || !tab.url) return;
-    if (this.isRecentCheckedURL(tab.url)) return;
+  onNavigation(url: string) {
+    if (this.isRecentlyChecked(url)) return;
 
-    const result = detect(tab.url);
-    console.log(tab.url, result);
-    if (result) this.storage.handleDetectionResult(result);
+    const hit = matchUrl(this.services, url);
+    console.log(url, hit);
+    if (hit) {
+      this.store.record(hit);
+      return;
+    }
+
+    const project = new URL(url).searchParams.get('project');
+    if (project) this.store.recordProject(project);
   }
 }

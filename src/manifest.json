@@ -16,6 +16,6 @@
     "type": "module"
   },
 
-  "permissions": ["activeTab", "storage"],
+  "permissions": ["storage", "webNavigation"],
   "host_permissions": ["https://console.cloud.google.com/*"]
 }

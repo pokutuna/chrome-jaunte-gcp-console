@@ -1,123 +1,204 @@
-import {products, Product, Feature} from './products';
-import {Resource} from './resource';
-import {JaunteState} from './storage';
-import {intersection} from './util';
+import {buildUrl, findPage, patternParams, ServiceDef} from './catalog.ts';
+import type {PageDef} from './catalog.ts';
+import {frecency, VisitState} from './visits.ts';
 
-interface FeatureCandidate {
-  product: Product;
-  feature: Feature;
-  lc: {
-    productName: string;
-    name: string;
-    path: string;
-  };
+export interface Candidate {
+  url: string;
+  service: ServiceDef;
+  page: PageDef;
+  project?: string;
+  resourceName?: string;
+  score: number;
 }
 
-const candidates = products.reduce((is, product) => {
-  const fs =
-    product.features.length !== 0
-      ? product.features.map(f => ({
-          feature: f,
-          product,
-          lc: {
-            productName: product.name.toLowerCase(),
-            name: f.name.toLowerCase(),
-            path: f.path,
-          },
-        }))
-      : {
-          feature: product, // Product satisfies Feature
-          product: product,
-          lc: {
-            productName: product.name.toLowerCase(),
-            name: product.name.toLowerCase(),
-            path: product.path,
-          },
-        };
-  return is.concat(fs);
-}, [] as FeatureCandidate[]);
+const topProjectsCount = 5;
+const maxResults = 8;
 
-function match(input: string, candidate: FeatureCandidate): boolean {
-  return (
-    candidate.lc.productName.includes(input) ||
-    candidate.lc.name.includes(input) ||
-    candidate.lc.path.includes(input)
-  );
+/** Pages that can be jumped to without any resource-specific param. */
+function isParamFreePage(page: PageDef): boolean {
+  if (patternParams(page.pattern).length > 0) return false;
+  for (const value of Object.values(page.query || {})) {
+    if (value.startsWith(':')) return false;
+  }
+  return true;
 }
 
-function matchResource(input: string, resource: Resource): boolean {
-  return (
-    resource.uniqueName.toLowerCase().includes(input) ||
-    resource.path.toLowerCase().includes(input) ||
-    resource.project.toLowerCase().includes(input)
-  );
+/**
+ * Per-token match weight against a candidate's fields.
+ * Returns the max weight across fields, or 0 if the token matches nothing.
+ */
+function tokenWeight(
+  token: string,
+  fields: {
+    resourceName?: string;
+    pageName: string;
+    serviceName: string;
+    aliases?: string[];
+    pageAliases?: string[];
+    project?: string;
+  },
+): number {
+  let weight = 0;
+
+  if (fields.resourceName) {
+    const name = fields.resourceName.toLowerCase();
+    if (name.startsWith(token)) weight = Math.max(weight, 5);
+    else if (name.includes(token)) weight = Math.max(weight, 4);
+  }
+
+  if (fields.pageName.toLowerCase().includes(token))
+    weight = Math.max(weight, 2);
+  if (fields.serviceName.toLowerCase().includes(token))
+    weight = Math.max(weight, 2);
+  for (const alias of fields.aliases || []) {
+    if (alias.toLowerCase().includes(token)) weight = Math.max(weight, 2);
+  }
+  for (const alias of fields.pageAliases || []) {
+    if (alias.toLowerCase().includes(token)) weight = Math.max(weight, 2);
+  }
+
+  if (fields.project && fields.project.toLowerCase().includes(token)) {
+    weight = Math.max(weight, 1);
+  }
+
+  return weight;
 }
 
-function resourceToItem(resource: Resource): MatchedItem {
-  // TODO fix models
-  const idx = resource.path.indexOf('/', 2);
-  const firstFragment =
-    idx !== -1 ? resource.path.slice(0, idx) : resource.path;
-  const product = products.find(p => p.path === firstFragment)!;
-
-  // TODO build path considering resource.query
-  const path = resource.path;
-
-  return {
-    project: resource.project,
-    product,
-    feature: {
-      name: [resource.name, resource.uniqueName].join(': '),
-      path,
-    },
-  };
+/** Sum of per-token max weights; undefined if any token fails to match (AND). */
+function matchScore(
+  tokens: string[],
+  fields: {
+    resourceName?: string;
+    pageName: string;
+    serviceName: string;
+    aliases?: string[];
+    pageAliases?: string[];
+    project?: string;
+  },
+): number | undefined {
+  let total = 0;
+  for (const token of tokens) {
+    const weight = tokenWeight(token, fields);
+    if (weight === 0) return undefined;
+    total += weight;
+  }
+  return total;
 }
 
-function featureCandidatesByToken(tokens: string[]) {
-  return tokens.reduce(
-    (m, t) => {
-      m[t] = new Set<FeatureCandidate>(candidates.filter(c => match(t, c)));
-      return m;
-    },
-    {} as {[token: string]: Set<FeatureCandidate>},
-  );
-}
+export function search(
+  tokens: string[],
+  services: ServiceDef[],
+  state: VisitState,
+  now: number,
+): Candidate[] {
+  const candidates: Candidate[] = [];
 
-const recentResourceSize = 20;
-const recentProjectSize = 8;
+  if (tokens.length === 0) {
+    // No tokens: list visited candidates by frecency.
+    const sorted = [...state.visits].sort(
+      (a, b) => frecency(b, now) - frecency(a, now),
+    );
+    for (const visit of sorted) {
+      const found = findPage(services, visit.pageId);
+      if (!found) continue;
+      const url = buildUrl(services, visit);
+      if (!url) continue;
+      const {service, page} = found;
+      const resourceName = page.resource
+        ? visit.params[page.resource.nameParam]
+        : undefined;
+      candidates.push({
+        url,
+        service,
+        page,
+        project: visit.project,
+        resourceName,
+        score: frecency(visit, now),
+      });
+    }
+  } else {
+    // Visited candidates.
+    for (const visit of state.visits) {
+      const found = findPage(services, visit.pageId);
+      if (!found) continue;
+      const url = buildUrl(services, visit);
+      if (!url) continue;
+      const {service, page} = found;
+      const resourceName = page.resource
+        ? visit.params[page.resource.nameParam]
+        : undefined;
 
-export interface MatchedItem {
-  project: string;
-  product: Product;
-  feature: Feature;
-}
+      const matched = matchScore(tokens, {
+        resourceName,
+        pageName: page.name,
+        serviceName: service.name,
+        aliases: service.aliases,
+        pageAliases: page.aliases,
+        project: visit.project,
+      });
+      if (matched === undefined) continue;
 
-export function search(tokens: string[], state: JaunteState): MatchedItem[] {
-  tokens = tokens.map(t => t.toLocaleLowerCase());
+      const score = matched * (1 + Math.log2(1 + frecency(visit, now)));
+      candidates.push({
+        url,
+        service,
+        page,
+        project: visit.project,
+        resourceName,
+        score,
+      });
+    }
 
-  const items: MatchedItem[] = [];
+    // Catalog x project candidates.
+    const topProjects = [...state.projects]
+      .sort((a, b) => frecency(b, now) - frecency(a, now))
+      .slice(0, topProjectsCount);
 
-  // search recent resources
-  const resources = state.resources.slice(0, recentResourceSize);
-  resources
-    .filter(r => tokens.every(t => matchResource(t, r)))
-    .forEach(r => items.push(resourceToItem(r)));
+    for (const projectVisit of topProjects) {
+      for (const service of services) {
+        for (const page of service.pages) {
+          if (!isParamFreePage(page)) continue;
 
-  // search projects * features
-  const projects = state.projects.slice(0, recentProjectSize);
-  const tokenToFeatures = featureCandidatesByToken(tokens);
-  projects.forEach(project => {
-    let cands = new Set(candidates);
-    tokens.forEach(t => {
-      if (!project.includes(t)) cands = intersection(cands, tokenToFeatures[t]);
-    });
+          const matched = matchScore(tokens, {
+            pageName: page.name,
+            serviceName: service.name,
+            aliases: service.aliases,
+            pageAliases: page.aliases,
+            project: projectVisit.project,
+          });
+          if (matched === undefined) continue;
 
-    // sort by candidates
-    candidates.forEach(f => {
-      if (cands.has(f))
-        items.push({feature: f.feature, product: f.product, project});
-    });
-  });
+          const url = buildUrl(services, {
+            pageId: page.id,
+            params: {},
+            project: projectVisit.project,
+          });
+          if (!url) continue;
 
-  return items;
+          const score =
+            matched * (1 + Math.log2(1 + frecency(projectVisit, now) * 0.3));
+          candidates.push({
+            url,
+            service,
+            page,
+            project: projectVisit.project,
+            score,
+          });
+        }
+      }
+    }
+  }
+
+  // Dedupe by url, keeping the highest score.
+  const byUrl = new Map<string, Candidate>();
+  for (const candidate of candidates) {
+    const existing = byUrl.get(candidate.url);
+    if (!existing || existing.score < candidate.score) {
+      byUrl.set(candidate.url, candidate);
+    }
+  }
+
+  return [...byUrl.values()]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, maxResults);
 }

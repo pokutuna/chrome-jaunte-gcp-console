@@ -24,18 +24,6 @@ export function wrapMatchedWord(
   ].join('');
 }
 
-export function union<T>(a: Set<T>, b: Set<T>): Set<T> {
-  const set = new Set<T>(a);
-  b.forEach(i => set.add(i));
-  return set;
-}
-
-export function intersection<T>(a: Set<T>, b: Set<T>): Set<T> {
-  const set = new Set<T>();
-  a.forEach(i => b.has(i) && set.add(i));
-  return set;
-}
-
 export function extractURL(input: string): string | undefined {
   const m = input.match(
     /(https?:\/\/[\w-]+(?:\.[\w-]+)*\.?(?::\d*)?(?:[/?#][\w!#$%&'()*+,\-./:;=?@~]*)?)/,
